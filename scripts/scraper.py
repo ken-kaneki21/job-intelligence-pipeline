@@ -1,8 +1,26 @@
 import requests
+from bs4 import BeautifulSoup
 import psycopg2
-from datetime import datetime
 import time
+import hashlib
 
+# ── SEARCH CONFIG — change these anytime ──────────────────
+KEYWORDS = [
+    "data engineer",
+    "analytics engineer",
+    "ETL developer",
+    "data pipeline engineer"
+]
+
+LOCATIONS = [
+    "Bangalore",
+    "Hyderabad",
+    "Mumbai",
+    "Pune",
+    "Remote"
+]
+
+# ── DB CONNECTION ──────────────────────────────────────────
 def get_db_connection():
     return psycopg2.connect(
         host="postgres",
@@ -12,101 +30,271 @@ def get_db_connection():
         password="password123"
     )
 
-def fetch_jobs_from_api(keyword, location="Bangalore, India"):
+# ── DUPLICATE DETECTION ────────────────────────────────────
+def generate_job_hash(title, company, location):
+    raw = f"{title.lower().strip()}{company.lower().strip()}{location.lower().strip()}"
+    return hashlib.md5(raw.encode()).hexdigest()
+
+# ── JSEARCH API (LinkedIn/Indeed/Glassdoor) ────────────────
+def fetch_jsearch_jobs(keyword, location="Bangalore", pages=3):
     RAPIDAPI_KEY = "de2fb04390msh0e2f1b13965fb1cp1ea271jsn23b006f3279a"
-    
     url = "https://jsearch.p.rapidapi.com/search"
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
     }
-    params = {
-        "query": f"{keyword} in {location}",
-        "page": "1",
-        "num_results": "10"
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=15)
-        print(f"Status: {response.status_code}")
-        
-        data = response.json()
-        
-        # Debug — see exactly what API returns
-        print(f"Response keys: {list(data.keys())}")
-        print(f"Status field: {data.get('status')}")
-        print(f"Data count: {len(data.get('data', []))}")
-        
-        # Print first result raw if any
-        if data.get('data'):
-            print(f"First job keys: {list(data['data'][0].keys())}")
-            first = data['data'][0]
-            print(f"Sample - Title: {first.get('job_title')} | Company: {first.get('employer_name')}")
-        else:
-            print(f"Full response: {str(data)[:1000]}")
-        
-        jobs = []
-        for job in data.get("data", []):
-            jobs.append({
-                "job_title": job.get("job_title", ""),
-                "company_name": job.get("employer_name", ""),
-                "location": job.get("job_city", location),
-                "job_url": job.get("job_apply_link", ""),
-                "source_platform": "JSearch"
-            })
-        
-        print(f"Fetched {len(jobs)} jobs for '{keyword}'")
-        return jobs
-        
-    except Exception as e:
-        print(f"API error: {e}")
+
+    jobs = []
+    for page in range(1, pages + 1):
         try:
-            print(f"Response text: {response.text[:500]}")
-        except:
-            pass
-        return []
+            params = {
+                "query": f"{keyword} in {location}, India",
+                "page": str(page),
+                "num_results": "10"
+            }
+            response = requests.get(url, headers=headers, params=params, timeout=15)
+            data = response.json()
 
-def get_mock_jobs(keyword):
-    mock_jobs = [
-        {
-            "job_title": "Data Engineer",
-            "company_name": "Razorpay",
-            "location": "Bangalore",
-            "job_url": "https://razorpay.com/jobs",
-            "source_platform": "Mock"
-        },
-        {
-            "job_title": "Senior Data Engineer",
-            "company_name": "Swiggy",
-            "location": "Bangalore",
-            "job_url": "https://swiggy.com/careers",
-            "source_platform": "Mock"
-        },
-        {
-            "job_title": "Analytics Engineer",
-            "company_name": "CRED",
-            "location": "Bangalore",
-            "job_url": "https://cred.club/careers",
-            "source_platform": "Mock"
-        },
-        {
-            "job_title": "ETL Developer",
-            "company_name": "Meesho",
-            "location": "Bangalore",
-            "job_url": "https://meesho.com/careers",
-            "source_platform": "Mock"
-        },
-        {
-            "job_title": "Junior Data Engineer",
-            "company_name": "Zepto",
-            "location": "Bangalore",
-            "job_url": "https://zepto.com/careers",
-            "source_platform": "Mock"
-        },
-    ]
-    print(f"Returning {len(mock_jobs)} mock jobs for '{keyword}'")
-    return mock_jobs
+            if data.get("status") != "OK":
+                print(f"JSearch page {page} failed: {data.get('message')}")
+                break
 
+            page_jobs = data.get("data", [])
+            if not page_jobs:
+                break
+
+            for job in page_jobs:
+                jobs.append({
+                    "job_title": job.get("job_title", ""),
+                    "company_name": job.get("employer_name", ""),
+                    "location": job.get("job_city", location),
+                    "job_url": job.get("job_apply_link", ""),
+                    "source_platform": "JSearch",
+                    "job_description": job.get("job_description", "")[:1000],
+                    "date_posted": job.get("job_posted_at_datetime_utc", None),
+                    "job_hash": generate_job_hash(
+                        job.get("job_title", ""),
+                        job.get("employer_name", ""),
+                        job.get("job_city", location)
+                    )
+                })
+
+            print(f"JSearch page {page}: fetched {len(page_jobs)} jobs for '{keyword}' in '{location}'")
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"JSearch error page {page}: {e}")
+            break
+
+    print(f"JSearch total: {len(jobs)} jobs for '{keyword}' in '{location}'")
+    return jobs
+
+
+# ── NAUKRI SCRAPER ─────────────────────────────────────────
+def scrape_naukri(keyword, location="bangalore"):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://www.naukri.com/",
+        "appid": "109",
+        "systemid": "109",
+        "gid": "LOCATION,INDUSTRY,EDUCATION,FAREA_ROLE",
+        "Connection": "keep-alive",
+    }
+
+    jobs = []
+    keyword_url = keyword.replace(" ", "-")
+    location_url = location.replace(" ", "-").lower()
+    location_lower = location.lower()
+
+    url = (
+        f"https://www.naukri.com/jobapi/v3/search"
+        f"?noOfResults=50&urlType=search_by_keyword&searchType=adv"
+        f"&keyword={keyword.replace(' ', '%20')}"
+        f"&location={location_lower}"
+        f"&pageNo=1"
+        f"&k={keyword.replace(' ', '%20')}"
+        f"&l={location_lower}"
+        f"&seoKey={keyword_url}-jobs-in-{location_url}"
+        f"&src=jobsearchDesk&latLong="
+    )
+
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        print(f"Naukri status: {response.status_code} for '{keyword}' in '{location}'")
+
+        if response.status_code == 200:
+            data = response.json()
+            job_list = data.get("jobDetails", [])
+            print(f"Naukri found {len(job_list)} jobs for '{keyword}' in '{location}'")
+
+            for job in job_list:
+                title = job.get("title", "")
+                company = job.get("companyName", "")
+                loc = job.get("placeholders", [{}])
+                location_text = loc[0].get("label", location) if loc else location
+                job_url = f"https://www.naukri.com{job.get('jdURL', '')}"
+
+                if title and company:
+                    jobs.append({
+                        "job_title": title,
+                        "company_name": company,
+                        "location": location_text,
+                        "job_url": job_url,
+                        "source_platform": "Naukri",
+                        "job_description": job.get("jobDescription", "")[:1000],
+                        "date_posted": None,
+                        "job_hash": generate_job_hash(title, company, location_text)
+                    })
+
+    except Exception as e:
+        print(f"Naukri error: {e}")
+
+    print(f"Naukri total: {len(jobs)} jobs for '{keyword}' in '{location}'")
+    return jobs
+
+
+# ── FOUNDIT SCRAPER ────────────────────────────────────────
+def scrape_foundit(keyword, location="bangalore"):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+
+    jobs = []
+    keyword_url = keyword.replace(" ", "-")
+    location_url = location.replace(" ", "-").lower()
+    url = f"https://www.foundit.in/srp/results?query={keyword.replace(' ', '+')}&location={location}"
+
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        print(f"Foundit status: {response.status_code} for '{keyword}' in '{location}'")
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        job_cards = (
+            soup.find_all("div", class_="srpResultCardContainer") or
+            soup.find_all("div", class_="jobcard") or
+            soup.find_all("div", attrs={"data-job-id": True})
+        )
+        print(f"Foundit found {len(job_cards)} cards for '{keyword}' in '{location}'")
+
+        for card in job_cards[:30]:
+            try:
+                title_el = (
+                    card.find("h3") or
+                    card.find("a", class_="jobTitle") or
+                    card.find("div", class_="title")
+                )
+                company_el = (
+                    card.find("div", class_="companyName") or
+                    card.find("span", class_="company") or
+                    card.find("a", class_="company-name")
+                )
+                link_el = card.find("a", href=True)
+
+                title = title_el.text.strip() if title_el else ""
+                company = company_el.text.strip() if company_el else ""
+                link = f"https://www.foundit.in{link_el['href']}" if link_el else ""
+
+                if title and company:
+                    jobs.append({
+                        "job_title": title,
+                        "company_name": company,
+                        "location": location,
+                        "job_url": link,
+                        "source_platform": "Foundit",
+                        "job_description": "",
+                        "date_posted": None,
+                        "job_hash": generate_job_hash(title, company, location)
+                    })
+            except Exception as e:
+                continue
+
+    except Exception as e:
+        print(f"Foundit error: {e}")
+
+    print(f"Foundit total: {len(jobs)} jobs for '{keyword}' in '{location}'")
+    return jobs
+
+
+# ── INTERNSHALA SCRAPER ────────────────────────────────────
+def scrape_internshala(keyword, location="bangalore"):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+
+    jobs = []
+    keyword_url = keyword.replace(" ", "-")
+    location_url = location.replace(" ", "-").lower()
+    url = f"https://internshala.com/jobs/{keyword_url}-jobs-in-{location_url}"
+
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        print(f"Internshala status: {response.status_code} for '{keyword}' in '{location}'")
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        # Try multiple selectors
+        job_cards = (
+            soup.find_all("div", class_="individual_internship") or
+            soup.find_all("div", class_="internship_meta") or
+            soup.find_all("div", attrs={"data-internship_id": True}) or
+            soup.find_all("div", class_="container-fluid")
+        )
+        print(f"Internshala found {len(job_cards)} cards for '{keyword}' in '{location}'")
+
+        # Debug first card
+        if job_cards:
+            print(f"First card classes: {job_cards[0].get('class')}")
+            print(f"First card snippet: {str(job_cards[0])[:300]}")
+
+        for card in job_cards[:30]:
+            try:
+                # Try multiple title selectors
+                title_el = (
+                    card.find("h3", class_="job-internship-name") or
+                    card.find("h3") or
+                    card.find("a", class_="job-title-href") or
+                    card.find("p", class_="profile")
+                )
+                # Try multiple company selectors
+                company_el = (
+                    card.find("p", class_="company-name") or
+                    card.find("a", class_="link-unstyled") or
+                    card.find("p", class_="company_name")
+                )
+                link_el = (
+                    card.find("a", class_="job-title-href") or
+                    card.find("a", href=True)
+                )
+
+                title = title_el.text.strip() if title_el else ""
+                company = company_el.text.strip() if company_el else ""
+                link = f"https://internshala.com{link_el['href']}" if link_el and link_el.get('href') else ""
+
+                if title and company:
+                    jobs.append({
+                        "job_title": title,
+                        "company_name": company,
+                        "location": location,
+                        "job_url": link,
+                        "source_platform": "Internshala",
+                        "job_description": "",
+                        "date_posted": None,
+                        "job_hash": generate_job_hash(title, company, location)
+                    })
+            except Exception as e:
+                continue
+
+    except Exception as e:
+        print(f"Internshala error: {e}")
+
+    print(f"Internshala total: {len(jobs)} jobs for '{keyword}' in '{location}'")
+    return jobs
+
+# ── SAVE TO DB WITH DEDUP ──────────────────────────────────
 def save_jobs_to_db(jobs):
     if not jobs:
         print("No jobs to save")
@@ -116,37 +304,63 @@ def save_jobs_to_db(jobs):
     cur = conn.cursor()
 
     saved = 0
+    skipped = 0
     for job in jobs:
         try:
+            cur.execute(
+                "SELECT id FROM raw_jobs WHERE job_hash = %s",
+                (job.get("job_hash", ""),)
+            )
+            if cur.fetchone():
+                skipped += 1
+                continue
+
             cur.execute("""
-                INSERT INTO raw_jobs 
-                    (job_title, company_name, location, job_url, source_platform)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO raw_jobs
+                    (job_title, company_name, location, job_url,
+                     source_platform, job_description, date_posted, job_hash)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 job["job_title"],
                 job["company_name"],
                 job["location"],
                 job["job_url"],
-                job["source_platform"]
+                job["source_platform"],
+                job.get("job_description", ""),
+                job.get("date_posted"),
+                job.get("job_hash", "")
             ))
             saved += 1
+
         except Exception as e:
-            print(f"Error saving: {e}")
+            print(f"Error saving job: {e}")
 
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Saved {saved} jobs to database")
+    print(f"Saved: {saved} | Skipped duplicates: {skipped}")
     return saved
 
-if __name__ == "__main__":
-    keywords = ["data engineer", "analytics engineer", "ETL developer"]
 
+# ── MAIN ───────────────────────────────────────────────────
+if __name__ == "__main__":
     all_jobs = []
-    for keyword in keywords:
-        jobs = fetch_jobs_from_api(keyword)
-        all_jobs.extend(jobs)
-        time.sleep(1)
+
+    for keyword in KEYWORDS:
+        for location in LOCATIONS:
+            print(f"\n--- Scraping: '{keyword}' in '{location}' ---")
+
+            all_jobs.extend(fetch_jsearch_jobs(keyword, location, pages=3))
+            time.sleep(2)
+
+            all_jobs.extend(scrape_naukri(keyword, location))
+            time.sleep(2)
+
+            all_jobs.extend(scrape_foundit(keyword, location))
+            time.sleep(2)
+
+            all_jobs.extend(scrape_internshala(keyword, location))
+            time.sleep(2)
 
     save_jobs_to_db(all_jobs)
-    print(f"Total: {len(all_jobs)} jobs")
+    print(f"\nTotal jobs processed: {len(all_jobs)}")

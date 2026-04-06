@@ -12,19 +12,26 @@ default_args = {
 def scrape_jobs():
     import sys
     sys.path.insert(0, '/opt/airflow/scripts')
-    from scraper import fetch_jobs_from_api, save_jobs_to_db
+    from scraper import (fetch_jsearch_jobs, scrape_naukri,
+                         scrape_foundit, scrape_internshala,
+                         save_jobs_to_db, KEYWORDS, LOCATIONS)
     import time
 
-    keywords = ["data engineer", "analytics engineer", "ETL developer"]
     all_jobs = []
-
-    for keyword in keywords:
-        jobs = fetch_jobs_from_api(keyword)
-        all_jobs.extend(jobs)
-        time.sleep(1)
+    for keyword in KEYWORDS:
+        for location in LOCATIONS:
+            print(f"\n--- '{keyword}' in '{location}' ---")
+            all_jobs.extend(fetch_jsearch_jobs(keyword, location, pages=3))
+            time.sleep(2)
+            all_jobs.extend(scrape_naukri(keyword, location))
+            time.sleep(2)
+            all_jobs.extend(scrape_foundit(keyword, location))
+            time.sleep(2)
+            all_jobs.extend(scrape_internshala(keyword, location))
+            time.sleep(2)
 
     saved = save_jobs_to_db(all_jobs)
-    print(f"Total jobs scraped and saved: {saved}")
+    print(f"Total: {len(all_jobs)} found, {saved} new saved")
     return saved
 
 def process_jobs():
