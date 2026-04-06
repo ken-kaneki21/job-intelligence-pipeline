@@ -1,8 +1,11 @@
+import os
+from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 import psycopg2
 import time
 import hashlib
+load_dotenv()
 
 # ── SEARCH CONFIG — change these anytime ──────────────────
 KEYWORDS = [
@@ -37,7 +40,7 @@ def generate_job_hash(title, company, location):
 
 # ── JSEARCH API (LinkedIn/Indeed/Glassdoor) ────────────────
 def fetch_jsearch_jobs(keyword, location="Bangalore", pages=3):
-    RAPIDAPI_KEY = "de2fb04390msh0e2f1b13965fb1cp1ea271jsn23b006f3279a"
+    RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "30d1c29002msh1973ad3f364c39ap16a693jsn758b7e9a264e")
     url = "https://jsearch.p.rapidapi.com/search"
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
