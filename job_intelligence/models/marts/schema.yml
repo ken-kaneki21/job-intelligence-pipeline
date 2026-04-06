@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: mart_jobs
+    description: "Analytics-ready jobs with ATS scoring"
+    columns:
+      - name: id
+        tests:
+          - unique
+          - not_null
+      - name: ats_score
+        tests:
+          - not_null

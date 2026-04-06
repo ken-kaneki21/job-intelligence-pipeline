@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: job_pipeline
+    database: job_pipeline
+    schema: public
+    tables:
+      - name: raw_jobs
+        description: "Raw job listings scraped daily"
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: job_title
+            tests:
+              - not_null

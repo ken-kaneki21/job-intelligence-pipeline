@@ -1,0 +1,31 @@
+[0m19:13:08.989890 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2ef3f19d0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2f131c440>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2ee7f9100>]}
+
+
+============================== 19:13:08.992913 | cfa6e657-980e-4400-a9cb-9e663ac1d1f0 ==============================
+[0m19:13:08.992913 [info ] [MainThread]: Running with dbt=1.11.7
+[0m19:13:08.993304 [debug] [MainThread]: running dbt with arguments {'warn_error': 'None', 'indirect_selection': 'eager', 'version_check': 'True', 'empty': 'None', 'partial_parse': 'True', 'log_path': 'logs', 'fail_fast': 'False', 'printer_width': '80', 'quiet': 'False', 'log_format': 'default', 'use_colors': 'True', 'send_anonymous_usage_stats': 'True', 'static_parser': 'True', 'introspect': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'log_cache_events': 'False', 'debug': 'False', 'no_print': 'None', 'invocation_command': 'dbt init job_intelligence', 'write_json': 'True', 'use_experimental_parser': 'False', 'profiles_dir': '/home/saurabh/.dbt', 'target_path': 'None', 'cache_selected_only': 'False'}
+[0m19:13:09.001404 [info ] [MainThread]: Creating dbt configuration folder at /home/saurabh/.dbt
+[0m19:13:09.002820 [debug] [MainThread]: Starter project path: /home/saurabh/job-intelligence-pipeline/dbt-env/lib/python3.12/site-packages/dbt/include/starter_project
+[0m19:13:09.007550 [info ] [MainThread]: 
+Your new dbt project "job_intelligence" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+
+[0m19:13:09.007920 [info ] [MainThread]: Setting up your profile.
+[0m19:14:11.094220 [info ] [MainThread]: Profile job_intelligence written to /home/saurabh/.dbt/profiles.yml using target's profile_template.yml and your supplied values. Run 'dbt debug' to validate the connection.
+[0m19:14:11.095522 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 55.50033, "process_in_blocks": "16", "process_kernel_time": 0.202876, "process_mem_max_rss": "107400", "process_out_blocks": "80", "process_user_time": 1.195209}
+[0m19:14:11.096060 [debug] [MainThread]: Command `dbt init` succeeded at 19:14:11.095956 after 55.50 seconds
+[0m19:14:11.096343 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2ef6089e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2ee823830>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x70a2ee756600>]}
+[0m19:14:11.096728 [debug] [MainThread]: Flushing usage events
+[0m19:14:12.133540 [debug] [MainThread]: An error was encountered while trying to flush usage events
