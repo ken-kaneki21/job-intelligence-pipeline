@@ -3264,3 +3264,136 @@
 [2026-04-06T19:24:48.078+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:24:48.078+0000] {dag.py:3033} INFO - Sync 1 DAGs
 [2026-04-06T19:24:48.106+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:24:48.106+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
 [2026-04-06T19:24:48.121+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.095 seconds
+[2026-04-06T19:25:18.574+0000] {processor.py:161} INFO - Started process (PID=2362) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:18.583+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:25:18.584+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:18.584+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:18.594+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:18.617+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:18.617+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:25:18.634+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:18.634+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:25:18.647+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.075 seconds
+[2026-04-06T19:25:49.013+0000] {processor.py:161} INFO - Started process (PID=2367) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:49.014+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:25:49.015+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:49.014+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:49.025+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:25:49.051+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:49.051+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:25:49.069+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:25:49.069+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:25:49.085+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.076 seconds
+[2026-04-06T19:26:19.520+0000] {processor.py:161} INFO - Started process (PID=2372) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:19.521+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:26:19.522+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:19.522+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:19.545+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:19.585+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:19.585+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:26:19.608+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:19.608+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:26:19.624+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.107 seconds
+[2026-04-06T19:26:49.940+0000] {processor.py:161} INFO - Started process (PID=2377) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:49.941+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:26:49.942+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:49.942+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:49.955+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:26:49.985+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:49.985+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:26:50.004+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:26:50.004+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:26:50.018+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.082 seconds
+[2026-04-06T19:27:20.381+0000] {processor.py:161} INFO - Started process (PID=2382) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:20.382+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:27:20.382+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:20.382+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:20.392+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:20.420+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:20.420+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:27:20.441+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:20.441+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:27:20.457+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.079 seconds
+[2026-04-06T19:27:51.906+0000] {processor.py:161} INFO - Started process (PID=2387) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:51.907+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:27:51.908+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:51.907+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:51.917+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:27:51.944+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:51.944+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:27:51.965+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:27:51.965+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:27:51.979+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.076 seconds
+[2026-04-06T19:28:25.337+0000] {processor.py:161} INFO - Started process (PID=2392) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:25.338+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:28:25.339+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:25.338+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:25.348+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:25.376+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:25.376+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:28:25.396+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:25.396+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:28:25.411+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.076 seconds
+[2026-04-06T19:28:58.862+0000] {processor.py:161} INFO - Started process (PID=2397) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:58.870+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:28:58.871+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:58.871+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:58.884+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:28:58.912+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:58.911+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:28:58.933+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:28:58.932+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:28:58.947+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.088 seconds
+[2026-04-06T19:29:29.207+0000] {processor.py:161} INFO - Started process (PID=2402) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:29.208+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:29:29.208+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:29.208+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:29.218+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:29.246+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:29.245+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:29:29.265+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:29.265+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:29:29.279+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.075 seconds
+[2026-04-06T19:29:59.501+0000] {processor.py:161} INFO - Started process (PID=2407) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:59.525+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:29:59.526+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:59.525+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:59.545+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:29:59.588+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:59.588+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:29:59.616+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:29:59.616+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:29:59.639+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.146 seconds
+[2026-04-06T19:30:30.018+0000] {processor.py:161} INFO - Started process (PID=2412) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:30:30.019+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:30:30.020+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:30:30.020+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:30:30.036+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:30:30.069+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:30:30.069+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:30:30.093+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:30:30.093+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:30:30.113+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.100 seconds
+[2026-04-06T19:31:00.502+0000] {processor.py:161} INFO - Started process (PID=2417) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:00.511+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:31:00.512+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:00.512+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:00.522+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:00.546+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:00.546+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:31:00.564+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:00.564+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:31:00.578+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.079 seconds
+[2026-04-06T19:31:30.992+0000] {processor.py:161} INFO - Started process (PID=2422) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:30.993+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:31:30.994+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:30.994+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:31.009+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:31:31.038+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:31.038+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:31:31.060+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:31:31.060+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:31:31.075+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.088 seconds
+[2026-04-06T19:32:01.446+0000] {processor.py:161} INFO - Started process (PID=2427) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:01.447+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:32:01.448+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:01.447+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:01.463+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:01.495+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:01.494+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:32:01.518+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:01.517+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:32:01.532+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.090 seconds
+[2026-04-06T19:32:31.937+0000] {processor.py:161} INFO - Started process (PID=2432) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:31.938+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:32:31.939+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:31.938+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:31.951+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:32:31.981+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:31.981+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:32:32.003+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:32:32.002+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:32:32.020+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.086 seconds
+[2026-04-06T19:33:02.435+0000] {processor.py:161} INFO - Started process (PID=2437) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:02.437+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:33:02.439+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:02.437+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:02.469+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:02.522+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:02.521+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:33:02.565+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:02.565+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:33:02.590+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.164 seconds
+[2026-04-06T19:33:32.870+0000] {processor.py:161} INFO - Started process (PID=2442) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:32.871+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:33:32.872+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:32.872+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:32.883+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:33:32.910+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:32.909+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:33:32.935+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:33:32.934+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:33:32.957+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.090 seconds
+[2026-04-06T19:34:03.313+0000] {processor.py:161} INFO - Started process (PID=2447) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:03.322+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:34:03.323+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:03.323+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:03.340+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:03.376+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:03.376+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:34:03.401+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:03.401+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:34:03.417+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.109 seconds
+[2026-04-06T19:34:33.835+0000] {processor.py:161} INFO - Started process (PID=2452) to work on /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:33.836+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/job_scraper_dag.py for tasks to queue
+[2026-04-06T19:34:33.836+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:33.836+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:33.847+0000] {processor.py:840} INFO - DAG(s) 'job_intelligence_pipeline' retrieved from /opt/airflow/dags/job_scraper_dag.py
+[2026-04-06T19:34:33.871+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:33.870+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2026-04-06T19:34:33.890+0000] {logging_mixin.py:188} INFO - [2026-04-06T19:34:33.890+0000] {dag.py:3820} INFO - Setting next_dagrun for job_intelligence_pipeline to 2026-04-06T09:00:00+00:00, run_after=2026-04-07T09:00:00+00:00
+[2026-04-06T19:34:33.903+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/job_scraper_dag.py took 0.072 seconds
