@@ -94,7 +94,8 @@ st.sidebar.divider()
 
 page = st.sidebar.radio(
     "Navigate",
-    ["📊 Dashboard", "📄 Resume Match", "📋 Applications"]
+    ["📊 Dashboard", "📄 Resume Match",
+     "📋 Applications", "📈 Market Trends"]
 )
 
 # ══════════════════════════════════════════════════════════
@@ -306,15 +307,13 @@ elif page == "📄 Resume Match":
                         raw_text, skills
                     )
 
-                    # Skip live scraping on Azure
-                    # Use existing jobs in DB instead
                     try:
                         total = get_total_jobs()
                         st.info(
                             f"🔍 Matching against "
                             f"{total} jobs in database..."
                         )
-                    except:
+                    except Exception:
                         st.info("🔍 Matching against job database...")
 
                     with st.spinner(
@@ -341,7 +340,7 @@ elif page == "📄 Resume Match":
                         )
             else:
                 st.info("No resumes uploaded yet.")
-        except:
+        except Exception:
             st.info("Upload your first resume!")
 
     st.divider()
@@ -371,7 +370,7 @@ elif page == "📄 Resume Match":
                 platform_filter = st.selectbox(
                     "Platform",
                     ["All", "JSearch", "Internshala",
-                     "Naukri", "LinkedIn", "Indeed"]
+                     "Naukri", "Instahyre"]
                 )
             with col3:
                 location_filter = st.text_input(
@@ -654,3 +653,200 @@ elif page == "📋 Applications":
 
     except Exception as e:
         st.error(f"Error: {e}")
+
+# ══════════════════════════════════════════════════════════
+# PAGE 4 — MARKET TRENDS
+# ══════════════════════════════════════════════════════════
+elif page == "📈 Market Trends":
+    st.title("📈 India Job Market Trends")
+    st.markdown(
+        "*Based on live job data from Naukri, "
+        "LinkedIn, Indeed & Internshala*"
+    )
+
+    try:
+        skill_keywords = [
+            'python', 'sql', 'airflow', 'dbt', 'spark',
+            'kafka', 'snowflake', 'bigquery', 'databricks',
+            'aws', 'azure', 'gcp', 'docker', 'kubernetes',
+            'postgresql', 'mysql', 'mongodb', 'tableau',
+            'power bi', 'pandas', 'pyspark', 'git', 'etl'
+        ]
+
+        conn = get_connection()
+        total_df = pd.read_sql(
+            "SELECT COUNT(*) as c FROM raw_jobs", conn
+        )
+        total = int(total_df['c'].iloc[0])
+        conn.close()
+
+        skill_counts = []
+        for skill in skill_keywords:
+            conn = get_connection()
+            result = pd.read_sql(f"""
+                SELECT COUNT(*) as count FROM raw_jobs
+                WHERE LOWER(job_description) LIKE '%{skill}%'
+                OR LOWER(job_title) LIKE '%{skill}%'
+            """, conn)
+            conn.close()
+            skill_counts.append({
+                'Skill': skill.title(),
+                'Jobs': int(result['count'].iloc[0])
+            })
+
+        skill_df = pd.DataFrame(skill_counts)
+        skill_df = skill_df[skill_df['Jobs'] > 0].sort_values(
+            'Jobs', ascending=False
+        )
+        skill_df['Percentage'] = (
+            skill_df['Jobs'] / total * 100
+        ).round(1)
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Jobs Tracked", total)
+        c2.metric("Top Skill", skill_df.iloc[0]['Skill'])
+        c3.metric(
+            "Top Skill Demand",
+            f"{skill_df.iloc[0]['Percentage']}%"
+        )
+        c4.metric("Skills Tracked", len(skill_df))
+
+        st.divider()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("🔥 Most In-Demand Skills")
+            fig = px.bar(
+                skill_df.head(15),
+                x='Percentage', y='Skill',
+                orientation='h',
+                color='Percentage',
+                color_continuous_scale='Viridis',
+                text='Percentage'
+            )
+            fig.update_traces(
+                texttemplate='%{text}%',
+                textposition='outside'
+            )
+            fig.update_layout(
+                margin=dict(t=0, b=0),
+                showlegend=False
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            st.subheader("🏢 Top Hiring Companies")
+            conn = get_connection()
+            company_df = pd.read_sql("""
+                SELECT company_name, COUNT(*) as openings
+                FROM raw_jobs
+                WHERE company_name IS NOT NULL
+                AND company_name != ''
+                GROUP BY company_name
+                ORDER BY openings DESC
+                LIMIT 15
+            """, conn)
+            conn.close()
+
+            fig2 = px.bar(
+                company_df,
+                x='openings', y='company_name',
+                orientation='h',
+                color='openings',
+                color_continuous_scale='Blues'
+            )
+            fig2.update_layout(margin=dict(t=0, b=0))
+            st.plotly_chart(fig2, use_container_width=True)
+
+        st.divider()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("📍 Jobs by City")
+            conn = get_connection()
+            city_df = pd.read_sql("""
+                SELECT
+                    CASE
+                        WHEN LOWER(location) LIKE '%bangalore%'
+                             OR LOWER(location) LIKE '%bengaluru%'
+                             THEN 'Bangalore'
+                        WHEN LOWER(location) LIKE '%hyderabad%'
+                             THEN 'Hyderabad'
+                        WHEN LOWER(location) LIKE '%mumbai%'
+                             THEN 'Mumbai'
+                        WHEN LOWER(location) LIKE '%pune%'
+                             THEN 'Pune'
+                        WHEN LOWER(location) LIKE '%delhi%'
+                             OR LOWER(location) LIKE '%noida%'
+                             OR LOWER(location) LIKE '%gurgaon%'
+                             THEN 'Delhi NCR'
+                        WHEN LOWER(location) LIKE '%remote%'
+                             THEN 'Remote'
+                        ELSE 'Other'
+                    END as city,
+                    COUNT(*) as jobs
+                FROM raw_jobs
+                GROUP BY city
+                ORDER BY jobs DESC
+            """, conn)
+            conn.close()
+
+            fig3 = px.pie(
+                city_df, values='jobs', names='city',
+                hole=0.4,
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            st.plotly_chart(fig3, use_container_width=True)
+
+        with col2:
+            st.subheader("🌐 Jobs by Platform")
+            conn = get_connection()
+            platform_df = pd.read_sql("""
+                SELECT source_platform, COUNT(*) as jobs
+                FROM raw_jobs
+                GROUP BY source_platform
+                ORDER BY jobs DESC
+            """, conn)
+            conn.close()
+
+            fig4 = px.bar(
+                platform_df,
+                x='source_platform', y='jobs',
+                color='source_platform',
+                color_discrete_sequence=(
+                    px.colors.qualitative.Pastel
+                )
+            )
+            fig4.update_layout(showlegend=False)
+            st.plotly_chart(fig4, use_container_width=True)
+
+        st.divider()
+        st.subheader("💡 Key Insights")
+
+        top3 = skill_df.head(3)['Skill'].tolist()
+        bangalore_jobs = city_df[
+            city_df['city'] == 'Bangalore'
+        ]['jobs'].sum()
+        bangalore_pct = round(bangalore_jobs / total * 100)
+
+        st.info(
+            f"🔥 **Top 3 skills in demand:** "
+            f"{', '.join(top3)} — "
+            f"master these to maximize your chances."
+        )
+        st.info(
+            f"📍 **Bangalore dominates** with "
+            f"{bangalore_pct}% of all tracked openings."
+        )
+        st.info(
+            f"🎯 **{skill_df.iloc[0]['Skill']}** appears in "
+            f"{skill_df.iloc[0]['Percentage']}% of job "
+            f"descriptions — it's the #1 skill to have."
+        )
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+        import traceback
+        st.code(traceback.format_exc())

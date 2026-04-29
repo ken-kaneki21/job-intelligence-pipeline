@@ -33,9 +33,10 @@ def get_db_connection():
     return psycopg2.connect(
         host=host,
         port=5432,
-        database="job_pipeline",
-        user="saurabh",
-        password="password123"
+        database=os.getenv("DB_NAME", "job_pipeline"),
+        user=os.getenv("DB_USER", "saurabh"),
+        password=os.getenv("DB_PASSWORD", "password123"),
+        sslmode="require" if host.endswith(".azure.com") else "disable"
     )
 
 # ── DEDUP HASH ─────────────────────────────────────────────
@@ -199,7 +200,7 @@ def scrape_naukri(keyword, location="bangalore", user_id=1):
                             "date_posted": None,
                             "user_id": user_id,
                             "job_hash": generate_job_hash(
-                                title, company, location
+                                title, company, loc_text
                             )
                         })
             except Exception as e:
@@ -261,161 +262,13 @@ def scrape_naukri(keyword, location="bangalore", user_id=1):
                                 title, company, location
                             )
                         })
-                except:
+                except Exception:
                     continue
 
     except Exception as e:
         print(f"Naukri parse error: {e}")
 
     print(f"Naukri: {len(jobs)} jobs for "
-          f"'{keyword}' in '{location}'")
-    return jobs
-
-# ── FOUNDIT SCRAPER ────────────────────────────────────────
-def scrape_foundit(keyword, location="bangalore", user_id=1):
-    jobs = []
-    api_url = (
-        f"https://www.foundit.in/middleware/jobsearch"
-        f"?searchPhrase={keyword.replace(' ', '+')}"
-        f"&locations={location}"
-        f"&start=0&limit=30"
-    )
-
-    print(f"Foundit: '{keyword}' in '{location}'")
-    resp = fetch_via_scraperapi(
-        api_url, render=False, country="in"
-    )
-
-    if resp:
-        try:
-            data = resp.json()
-            job_list = (
-                data.get("jobSearchResponse", {})
-                .get("data", {})
-                .get("jobs", [])
-            ) or data.get("jobs", []) or []
-
-            for job in job_list:
-                title = job.get("title", "") or ""
-                company = (
-                    job.get("companyName", "") or
-                    job.get("company", "") or ""
-                )
-                loc = (
-                    job.get("location", "") or
-                    job.get("city", location) or location
-                )
-                job_url = (
-                    job.get("applyRedirectUrl", "") or ""
-                )
-                if not job_url:
-                    jid = job.get("jobId", "")
-                    if jid:
-                        job_url = (
-                            f"https://www.foundit.in"
-                            f"/job/{jid}"
-                        )
-
-                if title and company:
-                    jobs.append({
-                        "job_title": title,
-                        "company_name": company,
-                        "location": loc,
-                        "job_url": job_url,
-                        "source_platform": "Foundit",
-                        "job_description": (
-                            job.get(
-                                "jobDescription", ""
-                            ) or ""
-                        )[:2000],
-                        "date_posted": None,
-                        "user_id": user_id,
-                        "job_hash": generate_job_hash(
-                            title, company, loc
-                        )
-                    })
-        except Exception as e:
-            print(f"Foundit API parse error: {e}")
-
-    if not jobs:
-        srp_url = (
-            f"https://www.foundit.in/srp/results"
-            f"?query={keyword.replace(' ', '+')}"
-            f"&location={location}"
-        )
-        resp2 = fetch_via_scraperapi(
-            srp_url, render=True, country="in"
-        )
-        if resp2:
-            try:
-                soup = BeautifulSoup(
-                    resp2.content, "html.parser"
-                )
-                cards = (
-                    soup.find_all(
-                        "div",
-                        class_="srpResultCardContainer"
-                    ) or
-                    soup.find_all(
-                        "div",
-                        attrs={"data-job-id": True}
-                    )
-                )
-                for card in cards[:30]:
-                    try:
-                        title_el = (
-                            card.find("h3") or
-                            card.find(
-                                "a", class_="jobTitle"
-                            )
-                        )
-                        company_el = (
-                            card.find(
-                                "div",
-                                class_="companyName"
-                            ) or
-                            card.find(
-                                "span", class_="company"
-                            )
-                        )
-                        link_el = card.find("a", href=True)
-                        title = (
-                            title_el.text.strip()
-                            if title_el else ""
-                        )
-                        company = (
-                            company_el.text.strip()
-                            if company_el else ""
-                        )
-                        link = ""
-                        if link_el and link_el.get("href"):
-                            href = link_el["href"]
-                            link = (
-                                f"https://www.foundit.in"
-                                f"{href}"
-                                if href.startswith("/")
-                                else href
-                            )
-                        if title and company:
-                            jobs.append({
-                                "job_title": title,
-                                "company_name": company,
-                                "location": location,
-                                "job_url": link,
-                                "source_platform": "Foundit",
-                                "job_description": "",
-                                "date_posted": None,
-                                "user_id": user_id,
-                                "job_hash": generate_job_hash(
-                                    title, company, location
-                                )
-                            })
-                    except:
-                        continue
-            except Exception as e:
-                print(f"Foundit HTML parse error: {e}")
-
-    print(f"Foundit: {len(jobs)} jobs for "
           f"'{keyword}' in '{location}'")
     return jobs
 
@@ -498,7 +351,7 @@ def scrape_internshala(keyword, location="bangalore",
                             title, company, location
                         )
                     })
-            except:
+            except Exception:
                 continue
 
     except Exception as e:
@@ -508,102 +361,57 @@ def scrape_internshala(keyword, location="bangalore",
           f"'{keyword}' in '{location}'")
     return jobs
 
-# ── GOOGLE JOBS SCRAPER ────────────────────────────────────
-def scrape_google_jobs(keyword, location="Bangalore",
-                       user_id=1):
-    key = os.getenv("SERPER_KEY", "")
-    if not key:
-        print("No SERPER_KEY in .env")
-        return []
-
+# ── INSTAHYRE SCRAPER ──────────────────────────────────────
+def scrape_instahyre(keyword, location="Bangalore", user_id=1):
     jobs = []
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://www.instahyre.com/"
+    }
     try:
-        response = requests.post(
-            "https://google.serper.dev/search",
-            headers={
-                "X-API-KEY": key,
-                "Content-Type": "application/json"
-            },
-            json={
-                "q": f"{keyword} jobs {location} India",
-                "gl": "in",
-                "hl": "en",
-                "num": 10
-            },
-            timeout=30
+        url = "https://www.instahyre.com/api/v1/search/"
+        params = {
+            "q": keyword,
+            "location": location,
+        }
+        resp = requests.get(
+            url, params=params,
+            headers=headers, timeout=15
         )
-
-        data = response.json()
-
-        # Free tier returns organic search results
-        organic = data.get("organic", [])
-
-        for item in organic[:10]:
-            title = item.get("title", "") or ""
-            link = item.get("link", "") or ""
-            snippet = item.get("snippet", "") or ""
-            display = item.get("displayLink", "") or ""
-
-            # Skip non-job pages
-            skip_domains = [
-                "youtube.com", "wikipedia.org",
-                "reddit.com", "quora.com",
-                "coursera.org", "udemy.com"
-            ]
-            if any(d in display for d in skip_domains):
-                continue
-
-            # Extract company from title
-            company = ""
-            title_lower = title.lower()
-            if " at " in title_lower:
-                parts = title.split(" at ")
-                if len(parts) > 1:
-                    company = parts[-1].strip()
-            if not company:
-                # Use domain as company fallback
-                company = display.replace(
-                    "www.", ""
-                ).split(".")[0].title()
-
-            # Detect platform from URL
-            platform = "Google Jobs"
-            if "naukri.com" in link:
-                platform = "Naukri"
-            elif "linkedin.com" in link:
-                platform = "LinkedIn"
-            elif "indeed.com" in link:
-                platform = "Indeed"
-            elif "foundit.in" in link:
-                platform = "Foundit"
-            elif "glassdoor" in link:
-                platform = "Glassdoor"
-            elif "wellfound.com" in link:
-                platform = "Wellfound"
-            elif "internshala.com" in link:
-                platform = "Internshala"
-
-            if title and company:
-                jobs.append({
-                    "job_title": title,
-                    "company_name": company,
-                    "location": location,
-                    "job_url": link,
-                    "source_platform": platform,
-                    "job_description": snippet[:2000],
-                    "date_posted": None,
-                    "user_id": user_id,
-                    "job_hash": generate_job_hash(
-                        title, company, location
-                    )
-                })
-
-        print(f"Google Jobs: {len(jobs)} jobs for "
-              f"'{keyword}' in '{location}'")
-
+        if resp.status_code == 200:
+            data = resp.json()
+            job_list = data.get('results', []) or []
+            for job in job_list[:30]:
+                title = job.get('designation', '') or ''
+                company = (
+                    job.get('employer', {})
+                    .get('name', '') or ''
+                )
+                loc = job.get('location', location) or location
+                job_url = (
+                    f"https://www.instahyre.com/job-"
+                    f"{job.get('id', '')}/"
+                )
+                if title and company:
+                    jobs.append({
+                        "job_title": title,
+                        "company_name": company,
+                        "location": loc,
+                        "job_url": job_url,
+                        "source_platform": "Instahyre",
+                        "job_description": "",
+                        "date_posted": None,
+                        "user_id": user_id,
+                        "job_hash": generate_job_hash(
+                            title, company, loc
+                        )
+                    })
     except Exception as e:
-        print(f"Google Jobs error: {e}")
+        print(f"Instahyre error: {e}")
 
+    print(f"Instahyre: {len(jobs)} jobs for "
+          f"'{keyword}' in '{location}'")
     return jobs
 
 # ── SAVE TO DB ─────────────────────────────────────────────
@@ -618,15 +426,6 @@ def save_jobs_to_db(jobs, user_id=1):
 
     for job in jobs:
         try:
-            cur.execute(
-                "SELECT id FROM raw_jobs "
-                "WHERE job_hash = %s AND user_id = %s",
-                (job.get("job_hash", ""), user_id)
-            )
-            if cur.fetchone():
-                skipped += 1
-                continue
-
             cur.execute("""
                 INSERT INTO raw_jobs
                     (job_title, company_name, location,
@@ -634,6 +433,7 @@ def save_jobs_to_db(jobs, user_id=1):
                      job_description, date_posted,
                      job_hash, user_id)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (job_hash) DO NOTHING
             """, (
                 job["job_title"],
                 job["company_name"],
@@ -645,7 +445,10 @@ def save_jobs_to_db(jobs, user_id=1):
                 job.get("job_hash", ""),
                 user_id
             ))
-            saved += 1
+            if cur.rowcount > 0:
+                saved += 1
+            else:
+                skipped += 1
 
         except Exception as e:
             print(f"Save error: {e}")
@@ -655,7 +458,7 @@ def save_jobs_to_db(jobs, user_id=1):
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Saved: {saved} | Skipped: {skipped}")
+    print(f"Saved: {saved} | Skipped (dupes): {skipped}")
     return saved
 
 # ── KEYWORD EXTRACTION FROM RESUME ────────────────────────
@@ -784,7 +587,7 @@ def scrape_for_resume(resume_id, user_id=1):
             )
             time.sleep(2)
             all_jobs.extend(
-                scrape_google_jobs(
+                scrape_instahyre(
                     keyword, location, user_id
                 )
             )
@@ -812,17 +615,13 @@ def scrape_default(user_id=1):
             )
             time.sleep(2)
             all_jobs.extend(
-                scrape_foundit(keyword, location, user_id)
-            )
-            time.sleep(2)
-            all_jobs.extend(
                 scrape_internshala(
                     keyword, location, user_id
                 )
             )
             time.sleep(2)
             all_jobs.extend(
-                scrape_google_jobs(
+                scrape_instahyre(
                     keyword, location, user_id
                 )
             )
