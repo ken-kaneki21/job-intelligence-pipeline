@@ -96,7 +96,7 @@ if page == "📊 Dashboard":
         "*Real-time job market intelligence — "
         "Airflow + PostgreSQL + dbt*"
     )
-    st.divider()
+    
 
     try:
         jobs_df = load_jobs()
@@ -144,7 +144,7 @@ if page == "📊 Dashboard":
         if selected_category != "All":
             filtered = filtered[filtered['job_category'] == selected_category]
 
-        st.divider()
+        
 
         # Metrics
         c1, c2, c3, c4 = st.columns(4)
@@ -158,9 +158,8 @@ if page == "📊 Dashboard":
             if len(filtered) > 0 else 0
         )
 
-        st.divider()
-
-        left, right = st.columns([2, 1])
+        
+        left, right = st.columns([3, 1])
 
         with left:
             st.subheader("🏆 Top Ranked Jobs")
@@ -187,7 +186,7 @@ if page == "📊 Dashboard":
             fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
             st.plotly_chart(fig, use_container_width=True)
 
-        st.divider()
+        
 
         c1, c2 = st.columns(2)
         with c1:
@@ -234,7 +233,7 @@ elif page == "📄 Resume Match":
         "*Upload your resume — we scrape jobs tailored to "
         "YOUR profile and score every one*"
     )
-    st.divider()
+    
 
     from resume_matcher import (
         extract_text_from_pdf, extract_skills,
@@ -300,7 +299,7 @@ elif page == "📄 Resume Match":
         except:
             st.info("Upload your first resume!")
 
-    st.divider()
+    
 
     # ── JOB MATCHES ──
     st.subheader("🎯 Your Job Matches")
@@ -376,7 +375,7 @@ elif page == "📄 Resume Match":
                     ])
                 )
 
-                st.divider()
+                
 
                 for idx, job in matches_df.iterrows():
                     score = float(job['match_score'])
@@ -472,7 +471,7 @@ elif page == "📄 Resume Match":
 # ══════════════════════════════════════════════════════════
 elif page == "📋 Applications":
     st.title("📋 Application Tracker")
-    st.divider()
+    
 
     try:
         apps_df = load_applications()
@@ -527,7 +526,7 @@ elif page == "📋 Applications":
                     f"{round(responded / len(apps_df) * 100)}%"
                 )
 
-                st.divider()
+                
 
                 status_filter = st.multiselect(
                     "Filter by Status",

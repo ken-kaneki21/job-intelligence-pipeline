@@ -7,12 +7,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # ── DB CONNECTION ──────────────────────────────────────────
 def get_db_connection():
+    host = os.getenv("DB_HOST", "localhost")
     return psycopg2.connect(
-        host="localhost",
+        host=host,
         port=5432,
-        database="job_pipeline",
-        user="saurabh",
-        password="password123"
+        database=os.getenv("DB_NAME", "job_pipeline"),
+        user=os.getenv("DB_USER", "saurabh"),
+        password=os.getenv("DB_PASSWORD", "password123"),
+        sslmode="require" if host.endswith(".azure.com") else "disable"
     )
 
 # ── EXTRACT TEXT FROM PDF ──────────────────────────────────
