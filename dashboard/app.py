@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 import sys
 import os
+import requests
+import json
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
@@ -16,10 +18,7 @@ st.set_page_config(
 # ── CUSTOM CSS ─────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Hide default sidebar */
     [data-testid="stSidebar"] { display: none; }
-    
-    /* Top nav bar */
     .topnav {
         position: sticky;
         top: 0;
@@ -28,47 +27,30 @@ st.markdown("""
         padding: 12px 24px;
         display: flex;
         align-items: center;
-        gap: 32px;
+        gap: 24px;
         border-bottom: 1px solid #2d2d2d;
         margin-bottom: 32px;
     }
-    .topnav .brand {
-        font-size: 18px;
-        font-weight: 700;
-        color: #fff;
-        margin-right: 16px;
-    }
+    .topnav .brand { font-size: 18px; font-weight: 700; color: #fff; margin-right: 16px; }
     .topnav a {
-        color: #aaa;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 6px;
-        transition: all 0.2s;
+        color: #aaa; text-decoration: none; font-size: 14px;
+        font-weight: 500; padding: 6px 12px; border-radius: 6px; transition: all 0.2s;
     }
-    .topnav a:hover {
-        color: #fff;
-        background: #1e1e2e;
+    .topnav a:hover { color: #fff; background: #1e1e2e; }
+    .section-anchor { padding-top: 80px; margin-top: -80px; }
+    .section-divider { margin: 48px 0 32px 0; border: none; border-top: 1px solid #2d2d2d; }
+    .main .block-container { padding-top: 0 !important; max-width: 1200px; }
+    .talking-point {
+        background: #1a1a2e; border-left: 3px solid #4CAF50;
+        padding: 12px 16px; margin: 8px 0; border-radius: 4px;
     }
-    
-    /* Section anchors offset for sticky nav */
-    .section-anchor {
-        padding-top: 80px;
-        margin-top: -80px;
+    .missing-skill {
+        background: #2d1a1a; border-left: 3px solid #E74C3C;
+        padding: 12px 16px; margin: 8px 0; border-radius: 4px;
     }
-    
-    /* Section dividers */
-    .section-divider {
-        margin: 48px 0 32px 0;
-        border: none;
-        border-top: 1px solid #2d2d2d;
-    }
-    
-    /* Main content padding */
-    .main .block-container {
-        padding-top: 0 !important;
-        max-width: 1200px;
+    .question-card {
+        background: #1a1a2e; border-left: 3px solid #3498DB;
+        padding: 12px 16px; margin: 8px 0; border-radius: 4px;
     }
 </style>
 
@@ -78,6 +60,7 @@ st.markdown("""
     <a href="#resume-match">📄 Resume Match</a>
     <a href="#applications">📋 Applications</a>
     <a href="#market-trends">📈 Market Trends</a>
+    <a href="#talking-points">🤖 AI Prep</a>
 </div>
 """, unsafe_allow_html=True)
 
@@ -85,13 +68,35 @@ st.markdown("""
 def get_connection():
     host = os.getenv("DB_HOST", "localhost")
     return psycopg2.connect(
-        host=host,
-        port=5432,
+        host=host, port=5432,
         database=os.getenv("DB_NAME", "job_pipeline"),
         user=os.getenv("DB_USER", "saurabh"),
         password=os.getenv("DB_PASSWORD", "password123"),
         sslmode="require" if host.endswith(".azure.com") else "disable"
     )
+
+# ── GROQ LLM ──────────────────────────────────────────────
+def call_groq(prompt, system_prompt="You are an expert career coach and data industry recruiter."):
+    groq_key = os.getenv("GROQ_API_KEY")
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama-3.1-70b-versatile",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 2000
+    }
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers, json=payload, timeout=30
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
 
 # ── DATA LOADERS ───────────────────────────────────────────
 @st.cache_data(ttl=300)
@@ -100,10 +105,8 @@ def load_jobs():
     df = pd.read_sql("""
         SELECT job_title, company_name, location, job_url,
                source_platform, scraped_date, ats_score,
-               experience_level, yoe_range, job_category,
-               relevance_rank
-        FROM analytics.mart_jobs
-        ORDER BY relevance_rank
+               experience_level, yoe_range, job_category, relevance_rank
+        FROM analytics.mart_jobs ORDER BY relevance_rank
     """, conn)
     conn.close()
     return df
@@ -111,33 +114,25 @@ def load_jobs():
 @st.cache_data(ttl=300)
 def load_applications():
     conn = get_connection()
-    df = pd.read_sql(
-        "SELECT * FROM applications ORDER BY applied_date DESC", conn
-    )
+    df = pd.read_sql("SELECT * FROM applications ORDER BY applied_date DESC", conn)
     conn.close()
     return df
 
 def load_resumes():
     conn = get_connection()
-    df = pd.read_sql("""
-        SELECT id, name, filename, extracted_skills, uploaded_at
-        FROM resumes ORDER BY uploaded_at DESC
-    """, conn)
+    df = pd.read_sql("SELECT id, name, filename, extracted_skills, uploaded_at FROM resumes ORDER BY uploaded_at DESC", conn)
     conn.close()
     return df
 
 def load_matches(resume_id, min_score=0.0):
     conn = get_connection()
     df = pd.read_sql("""
-        SELECT r.id as job_id, r.job_title, r.company_name,
-               r.location, r.job_url, r.source_platform,
-               r.date_posted, jm.match_score,
-               jm.matched_keywords, jm.missing_keywords
-        FROM job_matches jm
-        JOIN raw_jobs r ON jm.job_id = r.id
+        SELECT r.id as job_id, r.job_title, r.company_name, r.location,
+               r.job_url, r.source_platform, r.date_posted,
+               jm.match_score, jm.matched_keywords, jm.missing_keywords
+        FROM job_matches jm JOIN raw_jobs r ON jm.job_id = r.id
         WHERE jm.resume_id = %s AND jm.match_score >= %s
-        ORDER BY jm.match_score DESC
-        LIMIT 200
+        ORDER BY jm.match_score DESC LIMIT 200
     """, conn, params=(resume_id, min_score))
     conn.close()
     return df
@@ -147,8 +142,7 @@ def get_total_jobs():
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM raw_jobs")
     count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
+    cur.close(); conn.close()
     return count
 
 # ══════════════════════════════════════════════════════════
@@ -169,8 +163,7 @@ try:
     with col2:
         location_search = st.text_input("📍 Location", placeholder="e.g. Bangalore...")
     with col3:
-        yoe_options = ["All", "0-1", "1-2", "2-3", "3-4+"]
-        selected_yoe = st.selectbox("📅 Experience (YOE)", yoe_options)
+        selected_yoe = st.selectbox("📅 Experience (YOE)", ["All", "0-1", "1-2", "2-3", "3-4+"])
     with col4:
         categories = ["All"] + sorted(jobs_df['job_category'].dropna().unique().tolist())
         selected_category = st.selectbox("💼 Category", categories)
@@ -202,7 +195,6 @@ try:
                 c3.write(f"**YOE:** {row['yoe_range']} yrs")
                 if row['job_url']:
                     st.markdown(f"[🔗 Apply Here]({row['job_url']})")
-
     with right:
         st.subheader("📊 Jobs by Category")
         cat_counts = filtered['job_category'].value_counts().reset_index()
@@ -219,7 +211,6 @@ try:
         fig2 = px.bar(co, x='Openings', y='Company', orientation='h', color='Openings', color_continuous_scale='Blues')
         fig2.update_layout(margin=dict(t=0, b=0))
         st.plotly_chart(fig2, use_container_width=True)
-
     with c2:
         st.subheader("📅 Jobs by YOE Range")
         yoe_counts = filtered['yoe_range'].value_counts().reset_index()
@@ -252,13 +243,11 @@ try:
         st.subheader("Upload Resume")
         resume_name = st.text_input("Resume Label", placeholder="e.g. Saurabh DE Resume")
         uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
-
         if uploaded_file and resume_name:
             if st.button("🚀 Upload & Match", type="primary"):
                 with st.spinner("Extracting text from resume..."):
                     pdf_bytes = uploaded_file.read()
                     raw_text = extract_text_from_pdf(pdf_bytes)
-
                 if not raw_text:
                     st.error("Could not extract text. Try a different PDF.")
                 else:
@@ -266,19 +255,16 @@ try:
                     st.success(f"Found {len(skills)} skills!")
                     st.write("**Skills found:**", ", ".join(skills))
                     resume_id = save_resume(resume_name, uploaded_file.name, raw_text, skills)
-
                     try:
                         total = get_total_jobs()
                         st.info(f"🔍 Matching against {total} jobs in database...")
                     except Exception:
                         st.info("🔍 Matching against job database...")
-
                     with st.spinner("🎯 Scoring all jobs against your resume... (~2 mins)"):
                         scored = score_jobs_for_resume(resume_id)
                         st.success(f"Scored {scored} jobs!")
                         st.cache_data.clear()
                         st.rerun()
-
     with col2:
         st.subheader("Your Resumes")
         try:
@@ -294,7 +280,6 @@ try:
 
     st.divider()
     st.subheader("🎯 Your Job Matches")
-
     resumes_df = load_resumes()
     if len(resumes_df) == 0:
         st.info("Upload a resume to see matches!")
@@ -343,7 +328,7 @@ try:
                         q = f"{job['job_title']} interview questions".replace(' ', '+')
                         st.markdown(f"[🎯 Interview Questions](https://www.google.com/search?q={q})")
                         company_slug = job['company_name'].lower().replace(' ', '-').replace(',', '').replace('.', '').replace("'", '')
-                        st.markdown(f"[⭐ Glassdoor Reviews](https://www.glassdoor.co.in/Reviews/{company_slug}-reviews.htm)")
+                        st.markdown(f"[⭐ Glassdoor](https://www.glassdoor.co.in/Reviews/{company_slug}-reviews.htm)")
                         li = job['company_name'].replace(' ', '%20')
                         st.markdown(f"[💼 LinkedIn](https://www.linkedin.com/company/{li})")
                     with c2:
@@ -375,7 +360,6 @@ st.title("📋 Application Tracker")
 try:
     apps_df = load_applications()
     col1, col2 = st.columns([3, 1])
-
     with col2:
         st.subheader("Add Application")
         with st.form("add_app"):
@@ -394,7 +378,6 @@ try:
                 st.success("Added!")
                 st.cache_data.clear()
                 st.rerun()
-
     with col1:
         if len(apps_df) > 0:
             c1, c2, c3, c4 = st.columns(4)
@@ -403,11 +386,9 @@ try:
             c3.metric("Offers", len(apps_df[apps_df['status'] == 'Offer']))
             responded = len(apps_df[apps_df['status'] != 'Applied'])
             c4.metric("Response Rate", f"{round(responded / len(apps_df) * 100)}%")
-
             status_filter = st.multiselect("Filter by Status", apps_df['status'].unique().tolist(), default=apps_df['status'].unique().tolist())
             filtered_apps = apps_df[apps_df['status'].isin(status_filter)]
             st.dataframe(filtered_apps[['job_title', 'company_name', 'applied_date', 'status', 'notes']], use_container_width=True, hide_index=True)
-
             status_counts = apps_df['status'].value_counts().reset_index()
             status_counts.columns = ['Status', 'Count']
             fig = px.bar(status_counts, x='Status', y='Count', color='Status',
@@ -415,7 +396,6 @@ try:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No applications yet!")
-
 except Exception as e:
     st.error(f"Applications error: {e}")
 
@@ -432,10 +412,8 @@ try:
         'python', 'sql', 'airflow', 'dbt', 'spark', 'kafka',
         'snowflake', 'bigquery', 'databricks', 'aws', 'azure',
         'gcp', 'docker', 'kubernetes', 'postgresql', 'mysql',
-        'mongodb', 'tableau', 'power bi', 'pandas', 'pyspark',
-        'git', 'etl'
+        'mongodb', 'tableau', 'power bi', 'pandas', 'pyspark', 'git', 'etl'
     ]
-
     conn = get_connection()
     total_df = pd.read_sql("SELECT COUNT(*) as c FROM raw_jobs", conn)
     total = int(total_df['c'].iloc[0])
@@ -461,10 +439,9 @@ try:
     c2.metric("Top Skill", skill_df.iloc[0]['Skill'])
     c3.metric("Top Skill Demand", f"{skill_df.iloc[0]['Percentage']}%")
     c4.metric("Skills Tracked", len(skill_df))
-
     st.divider()
-    col1, col2 = st.columns(2)
 
+    col1, col2 = st.columns(2)
     with col1:
         st.subheader("🔥 Most In-Demand Skills")
         fig = px.bar(skill_df.head(15), x='Percentage', y='Skill', orientation='h',
@@ -472,7 +449,6 @@ try:
         fig.update_traces(texttemplate='%{text}%', textposition='outside')
         fig.update_layout(margin=dict(t=0, b=0), showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
-
     with col2:
         st.subheader("🏢 Top Hiring Companies")
         conn = get_connection()
@@ -489,7 +465,6 @@ try:
 
     st.divider()
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("📍 Jobs by City")
         conn = get_connection()
@@ -503,25 +478,20 @@ try:
                     WHEN LOWER(location) LIKE '%delhi%' OR LOWER(location) LIKE '%noida%' OR LOWER(location) LIKE '%gurgaon%' THEN 'Delhi NCR'
                     WHEN LOWER(location) LIKE '%remote%' THEN 'Remote'
                     ELSE 'Other'
-                END as city,
-                COUNT(*) as jobs
+                END as city, COUNT(*) as jobs
             FROM raw_jobs GROUP BY city ORDER BY jobs DESC
         """, conn)
         conn.close()
         fig3 = px.pie(city_df, values='jobs', names='city', hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Set3)
         st.plotly_chart(fig3, use_container_width=True)
-
     with col2:
         st.subheader("🌐 Jobs by Platform")
         conn = get_connection()
-        platform_df = pd.read_sql("""
-            SELECT source_platform, COUNT(*) as jobs FROM raw_jobs
-            GROUP BY source_platform ORDER BY jobs DESC
-        """, conn)
+        platform_df = pd.read_sql("SELECT source_platform, COUNT(*) as jobs FROM raw_jobs GROUP BY source_platform ORDER BY jobs DESC", conn)
         conn.close()
-        fig4 = px.bar(platform_df, x='source_platform', y='jobs',
-            color='source_platform', color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig4 = px.bar(platform_df, x='source_platform', y='jobs', color='source_platform',
+            color_discrete_sequence=px.colors.qualitative.Pastel)
         fig4.update_layout(showlegend=False)
         st.plotly_chart(fig4, use_container_width=True)
 
@@ -537,3 +507,220 @@ try:
 except Exception as e:
     st.error(f"Market Trends error: {e}")
     import traceback; st.code(traceback.format_exc())
+
+# ══════════════════════════════════════════════════════════
+# SECTION 5 — AI INTERVIEW PREP (TALKING POINTS GENERATOR)
+# ══════════════════════════════════════════════════════════
+st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+st.markdown('<div class="section-anchor" id="talking-points"></div>', unsafe_allow_html=True)
+st.title("🤖 AI Interview Prep")
+st.markdown("*Paste a job description — get personalized talking points, likely interview questions, and skill gap analysis powered by Llama 3.1 70B*")
+
+# Resume context for the LLM
+SAURABH_RESUME = """
+Name: Saurabh
+Role: Data Analyst / Data Engineer
+Experience: 1.8 years at Code Era Technologies Pvt. Ltd. (Aug 2024 – Mar 2026)
+Education: B.Tech Aerospace Engineering, IIEST Shibpur (CGPA 7.25, 2024)
+
+Key Experience:
+- Sole data hire across 8+ live SaaS client applications (taxi, food delivery, e-commerce, school management, billing, dating)
+- Built data infrastructure from scratch — no existing pipelines when joined
+- Owned end-to-end analytics: data extraction → cleaning → analysis → dashboards → stakeholder presentation
+
+Technical Skills:
+- SQL (Azure SQL, MySQL, BigQuery) — Advanced: CTEs, joins, window functions, aggregations
+- Python (Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn)
+- Power BI, Tableau, DAX, Power Query
+- ETL pipelines, dbt, Airflow, Docker, PostgreSQL
+- Azure (ML Studio, AI Fundamentals), BigQuery, Snowflake (familiar)
+- A/B Testing, Cohort Analysis, Funnel Analysis, Retention Analysis
+- LLM/GenAI: IBM WatsonX, OpenAI Python SDK, RAG, embeddings, Llama 2
+
+Key Achievements:
+- 73% non-subscriber gap finding across 3,900 retail transactions
+- 40% pipeline error reduction on food delivery platform
+- 30% reporting automation improvement
+- 8-12% delivery success improvement (validated over 3 months)
+- A/B test results showing 6-9% engagement lift
+- Credit Risk Scorecard with ROC-AUC 0.79, KS statistic 38 on 150K records
+- Built Job Intelligence Platform: Airflow + dbt + PostgreSQL + Streamlit + Azure
+
+Certifications:
+- Google Advanced Data Analytics Professional
+- Microsoft Power BI Data Analyst
+- IBM Generative AI Data Analyst (WatsonX, Llama 2, IBM Granite)
+- Microsoft Azure AI Fundamentals (AI-900)
+- Applied Statistics (DeepLearning.AI)
+- HackerRank SQL Advanced
+"""
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("📋 Paste Job Description")
+    jd_text = st.text_area(
+        "Job Description",
+        placeholder="Paste the full job description here...\n\nCompany name, role, requirements, responsibilities — the more detail the better.",
+        height=300,
+        key="jd_input"
+    )
+    
+    analysis_type = st.multiselect(
+        "What do you want?",
+        ["🎯 Personalized Talking Points", "❓ Likely Interview Questions", 
+         "📊 Skill Gap Analysis", "✉️ Cold Outreach Message"],
+        default=["🎯 Personalized Talking Points", "❓ Likely Interview Questions", "📊 Skill Gap Analysis"]
+    )
+    
+    custom_context = st.text_area(
+        "Any extra context? (optional)",
+        placeholder="e.g. This is a startup, I spoke to the founder, the role focuses on real-time pipelines...",
+        height=80,
+        key="extra_context"
+    )
+    
+    generate_btn = st.button("⚡ Generate with AI", type="primary", disabled=not jd_text)
+
+with col2:
+    st.subheader("🧠 AI Analysis")
+    
+    if generate_btn and jd_text:
+        
+        if "🎯 Personalized Talking Points" in analysis_type:
+            with st.spinner("Generating talking points..."):
+                prompt = f"""
+You are helping Saurabh prepare for a job interview. Here is his background:
+
+{SAURABH_RESUME}
+
+Here is the job description he is applying for:
+{jd_text}
+
+{f"Additional context: {custom_context}" if custom_context else ""}
+
+Generate 5-7 highly specific, personalized talking points for Saurabh's interview. 
+Each talking point should:
+1. Directly connect one of Saurabh's real achievements/experiences to a specific requirement in the JD
+2. Include a specific metric or outcome from his background
+3. Be 2-3 sentences — concise and impactful
+4. Start with the situation/achievement, then connect it to what this company needs
+
+Format each as:
+**[Requirement from JD]**
+[Talking point with specific metrics]
+
+Only include talking points where there is a genuine, strong connection. Quality over quantity.
+"""
+                try:
+                    result = call_groq(prompt)
+                    st.markdown("### 🎯 Personalized Talking Points")
+                    st.markdown(result)
+                    st.divider()
+                except Exception as e:
+                    st.error(f"Error generating talking points: {e}")
+
+        if "❓ Likely Interview Questions" in analysis_type:
+            with st.spinner("Predicting interview questions..."):
+                prompt = f"""
+Based on this job description:
+{jd_text}
+
+And this candidate's background:
+{SAURABH_RESUME}
+
+Predict the 8 most likely interview questions the interviewer will ask Saurabh specifically.
+Mix of:
+- Technical questions based on the JD requirements
+- Behavioral questions about his experience
+- Situational questions about gaps or challenges
+
+For each question, provide a brief 1-sentence hint on how Saurabh should angle his answer using his specific background.
+
+Format:
+**Q1: [Question]**
+💡 Hint: [How to angle it using Saurabh's background]
+"""
+                try:
+                    result = call_groq(prompt)
+                    st.markdown("### ❓ Likely Interview Questions")
+                    st.markdown(result)
+                    st.divider()
+                except Exception as e:
+                    st.error(f"Error generating questions: {e}")
+
+        if "📊 Skill Gap Analysis" in analysis_type:
+            with st.spinner("Analyzing skill gaps..."):
+                prompt = f"""
+Compare this job description:
+{jd_text}
+
+Against Saurabh's skills:
+{SAURABH_RESUME}
+
+Provide a skill gap analysis with three sections:
+
+**✅ Strong Matches** (skills he has that directly match JD requirements — be specific)
+
+**⚠️ Partial Matches** (skills he has but may need to demonstrate more depth)
+
+**❌ Gaps** (things the JD requires that he genuinely doesn't have — be honest, max 3)
+
+**🎯 Recommended Angle** (1 paragraph: how should Saurabh position himself for this role given his profile?)
+
+Be honest and direct. Don't sugarcoat gaps.
+"""
+                try:
+                    result = call_groq(prompt)
+                    st.markdown("### 📊 Skill Gap Analysis")
+                    st.markdown(result)
+                    st.divider()
+                except Exception as e:
+                    st.error(f"Error generating gap analysis: {e}")
+
+        if "✉️ Cold Outreach Message" in analysis_type:
+            with st.spinner("Writing outreach message..."):
+                # Extract company name hint from JD
+                prompt = f"""
+Write a LinkedIn cold outreach DM for Saurabh to send to a recruiter/hiring manager at the company posting this job:
+
+Job Description:
+{jd_text}
+
+Saurabh's background:
+{SAURABH_RESUME}
+
+{f"Additional context: {custom_context}" if custom_context else ""}
+
+The message should:
+- Open with "came across your profile / came across this role"
+- Be direct and confident, not sycophantic
+- Mention 1-2 specific things from the JD that match his background
+- Reference his "sole analyst across 5+ SaaS products" angle
+- Be 4-6 sentences max
+- End with his contact: saurabhbsv1@gmail.com | +91-9352287355
+- Sound like a real person, not a template
+
+Do not add subject line. Just the DM message.
+"""
+                try:
+                    result = call_groq(prompt)
+                    st.markdown("### ✉️ Cold Outreach Message")
+                    st.markdown(result)
+                    st.divider()
+                except Exception as e:
+                    st.error(f"Error generating outreach: {e}")
+
+        st.success("✅ Done! Copy what you need above.")
+
+    elif not jd_text:
+        st.info("👈 Paste a job description to get started.")
+        st.markdown("""
+**What this does:**
+- 🎯 **Talking Points** — maps your real achievements to JD requirements with metrics
+- ❓ **Interview Questions** — predicts what they'll actually ask you
+- 📊 **Skill Gap Analysis** — honest assessment of strong matches vs gaps
+- ✉️ **Outreach Message** — ready-to-send LinkedIn DM
+
+*Powered by Llama 3.1 70B via Groq*
+""")
