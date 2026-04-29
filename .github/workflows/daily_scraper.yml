@@ -22,7 +22,7 @@ jobs:
         pip install requests beautifulsoup4 psycopg2-binary \
           python-dotenv scikit-learn PyPDF2 numpy pandas
 
-    - name: Run scraper
+    - name: Run lite scraper
       env:
         DB_HOST: ${{ secrets.DB_HOST }}
         DB_NAME: ${{ secrets.DB_NAME }}
@@ -31,4 +31,4 @@ jobs:
         RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
       run: |
-        python scripts/scraper.py
+        python scripts/scraper_lite.py
