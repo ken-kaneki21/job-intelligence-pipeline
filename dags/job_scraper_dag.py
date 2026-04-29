@@ -12,35 +12,44 @@ default_args = {
 def scrape_jobs():
     import sys
     sys.path.insert(0, '/opt/airflow/scripts')
-    from scraper import (fetch_jsearch_jobs, scrape_naukri,
-                         scrape_foundit, scrape_internshala,
-                         save_jobs_to_db, KEYWORDS, LOCATIONS)
-    import time
-
-    all_jobs = []
-    for keyword in KEYWORDS:
-        for location in LOCATIONS:
-            print(f"\n--- '{keyword}' in '{location}' ---")
-            all_jobs.extend(fetch_jsearch_jobs(keyword, location, pages=3))
-            time.sleep(2)
-            all_jobs.extend(scrape_naukri(keyword, location))
-            time.sleep(2)
-            all_jobs.extend(scrape_foundit(keyword, location))
-            time.sleep(2)
-            all_jobs.extend(scrape_internshala(keyword, location))
-            time.sleep(2)
-
-    saved = save_jobs_to_db(all_jobs)
-    print(f"Total: {len(all_jobs)} found, {saved} new saved")
+    from scraper import scrape_default
+    saved = scrape_default(user_id=1)
+    print(f"Daily scrape complete: {saved} new jobs")
     return saved
 
 def process_jobs():
-    print("Processing step — ATS scoring coming next!")
+    import sys
+    sys.path.insert(0, '/opt/airflow/scripts')
+    from resume_matcher import score_jobs_for_resume
+    import psycopg2
+
+    # Score jobs for all existing resumes
+    conn = psycopg2.connect(
+        host="postgres",
+        port=5432,
+        database="job_pipeline",
+        user="saurabh",
+        password="password123"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM resumes ORDER BY id")
+    resume_ids = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+
+    total_scored = 0
+    for resume_id in resume_ids:
+        print(f"Scoring jobs for resume {resume_id}...")
+        scored = score_jobs_for_resume(resume_id)
+        total_scored += scored
+
+    print(f"Process complete: {total_scored} jobs scored across {len(resume_ids)} resumes")
+    return total_scored
 
 with DAG(
     dag_id="job_intelligence_pipeline",
     default_args=default_args,
-    description="Scrape and process job listings daily",
+    description="Daily job scraping + resume scoring pipeline",
     schedule_interval="0 9 * * *",
     start_date=datetime(2026, 4, 1),
     catchup=False,
