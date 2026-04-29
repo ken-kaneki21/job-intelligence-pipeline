@@ -15,13 +15,14 @@ st.set_page_config(
 
 # ── DB CONNECTION ──────────────────────────────────────────
 def get_connection():
+    host = os.getenv("DB_HOST", "localhost")
     return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
+        host=host,
         port=5432,
         database=os.getenv("DB_NAME", "job_pipeline"),
         user=os.getenv("DB_USER", "saurabh"),
         password=os.getenv("DB_PASSWORD", "password123"),
-        sslmode="require" if os.getenv("DB_HOST", "").endswith(".azure.com") else "disable"
+        sslmode="require" if host.endswith(".azure.com") else "disable"
     )
 
 # ── DATA LOADERS ───────────────────────────────────────────
@@ -61,11 +62,11 @@ def load_resumes():
 def load_matches(resume_id, min_score=0.0):
     conn = get_connection()
     df = pd.read_sql("""
-        SELECT 
+        SELECT
             r.id as job_id,
             r.job_title, r.company_name, r.location,
             r.job_url, r.source_platform, r.date_posted,
-            jm.match_score, jm.interview_chance,
+            jm.match_score,
             jm.matched_keywords, jm.missing_keywords
         FROM job_matches jm
         JOIN raw_jobs r ON jm.job_id = r.id
@@ -76,6 +77,15 @@ def load_matches(resume_id, min_score=0.0):
     """, conn, params=(resume_id, min_score))
     conn.close()
     return df
+
+def get_total_jobs():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM raw_jobs")
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return count
 
 # ── SIDEBAR ────────────────────────────────────────────────
 st.sidebar.title("🎯 Job Intelligence")
@@ -96,13 +106,11 @@ if page == "📊 Dashboard":
         "*Real-time job market intelligence — "
         "Airflow + PostgreSQL + dbt*"
     )
-    
 
     try:
         jobs_df = load_jobs()
         apps_df = load_applications()
 
-        # Filters
         st.subheader("🔍 Search & Filter")
         col1, col2, col3, col4 = st.columns(4)
 
@@ -118,14 +126,17 @@ if page == "📊 Dashboard":
             )
         with col3:
             yoe_options = ["All", "0-1", "1-2", "2-3", "3-4+"]
-            selected_yoe = st.selectbox("📅 Experience (YOE)", yoe_options)
+            selected_yoe = st.selectbox(
+                "📅 Experience (YOE)", yoe_options
+            )
         with col4:
             categories = ["All"] + sorted(
                 jobs_df['job_category'].dropna().unique().tolist()
             )
-            selected_category = st.selectbox("💼 Category", categories)
+            selected_category = st.selectbox(
+                "💼 Category", categories
+            )
 
-        # Apply filters
         filtered = jobs_df.copy()
         if keyword_search:
             filtered = filtered[
@@ -140,13 +151,14 @@ if page == "📊 Dashboard":
                 )
             ]
         if selected_yoe != "All":
-            filtered = filtered[filtered['yoe_range'] == selected_yoe]
+            filtered = filtered[
+                filtered['yoe_range'] == selected_yoe
+            ]
         if selected_category != "All":
-            filtered = filtered[filtered['job_category'] == selected_category]
+            filtered = filtered[
+                filtered['job_category'] == selected_category
+            ]
 
-        
-
-        # Metrics
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Jobs Found", len(filtered))
         c2.metric("DE Roles", len(
@@ -158,7 +170,6 @@ if page == "📊 Dashboard":
             if len(filtered) > 0 else 0
         )
 
-        
         left, right = st.columns([3, 1])
 
         with left:
@@ -174,39 +185,55 @@ if page == "📊 Dashboard":
                     c2.write(f"**Level:** {row['experience_level']}")
                     c3.write(f"**YOE:** {row['yoe_range']} yrs")
                     if row['job_url']:
-                        st.markdown(f"[🔗 Apply Here]({row['job_url']})")
+                        st.markdown(
+                            f"[🔗 Apply Here]({row['job_url']})"
+                        )
 
         with right:
             st.subheader("📊 Jobs by Category")
-            cat_counts = filtered['job_category'].value_counts().reset_index()
+            cat_counts = (
+                filtered['job_category']
+                .value_counts()
+                .reset_index()
+            )
             cat_counts.columns = ['Category', 'Count']
             fig = px.pie(
-                cat_counts, values='Count', names='Category', hole=0.4
+                cat_counts, values='Count',
+                names='Category', hole=0.4
             )
             fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
             st.plotly_chart(fig, use_container_width=True)
 
-        
-
         c1, c2 = st.columns(2)
         with c1:
             st.subheader("🏢 Top Companies Hiring")
-            co = filtered['company_name'].value_counts().head(10).reset_index()
+            co = (
+                filtered['company_name']
+                .value_counts()
+                .head(10)
+                .reset_index()
+            )
             co.columns = ['Company', 'Openings']
             fig2 = px.bar(
-                co, x='Openings', y='Company', orientation='h',
-                color='Openings', color_continuous_scale='Blues'
+                co, x='Openings', y='Company',
+                orientation='h', color='Openings',
+                color_continuous_scale='Blues'
             )
             fig2.update_layout(margin=dict(t=0, b=0))
             st.plotly_chart(fig2, use_container_width=True)
 
         with c2:
             st.subheader("📅 Jobs by YOE Range")
-            yoe_counts = filtered['yoe_range'].value_counts().reset_index()
+            yoe_counts = (
+                filtered['yoe_range']
+                .value_counts()
+                .reset_index()
+            )
             yoe_counts.columns = ['YOE', 'Count']
             yoe_order = ['0-1', '1-2', '2-3', '3-4+']
             yoe_counts['YOE'] = pd.Categorical(
-                yoe_counts['YOE'], categories=yoe_order, ordered=True
+                yoe_counts['YOE'],
+                categories=yoe_order, ordered=True
             )
             yoe_counts = yoe_counts.sort_values('YOE')
             fig3 = px.bar(
@@ -216,7 +243,9 @@ if page == "📊 Dashboard":
                     '2-3': '#F39C12', '3-4+': '#E74C3C'
                 }
             )
-            fig3.update_layout(margin=dict(t=0, b=0), showlegend=False)
+            fig3.update_layout(
+                margin=dict(t=0, b=0), showlegend=False
+            )
             st.plotly_chart(fig3, use_container_width=True)
 
     except Exception as e:
@@ -230,10 +259,10 @@ if page == "📊 Dashboard":
 elif page == "📄 Resume Match":
     st.title("📄 Resume Match Engine")
     st.markdown(
-        "*Upload your resume — we scrape jobs tailored to "
-        "YOUR profile and score every one*"
+        "*Upload your resume — get matched against "
+        "live job listings from Naukri, LinkedIn, "
+        "Indeed and Internshala*"
     )
-    
 
     from resume_matcher import (
         extract_text_from_pdf, extract_skills,
@@ -248,36 +277,50 @@ elif page == "📄 Resume Match":
             "Resume Label",
             placeholder="e.g. Saurabh DE Resume"
         )
-        uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
+        uploaded_file = st.file_uploader(
+            "Upload PDF", type=["pdf"]
+        )
 
         if uploaded_file and resume_name:
             if st.button("🚀 Upload & Match", type="primary"):
-                with st.spinner("Extracting text from resume..."):
+                with st.spinner(
+                    "Extracting text from resume..."
+                ):
                     pdf_bytes = uploaded_file.read()
                     raw_text = extract_text_from_pdf(pdf_bytes)
 
                 if not raw_text:
-                    st.error("Could not extract text. Try a different PDF.")
+                    st.error(
+                        "Could not extract text. "
+                        "Try a different PDF."
+                    )
                 else:
                     skills = extract_skills(raw_text)
                     st.success(f"Found {len(skills)} skills!")
-                    st.write("**Skills found:**", ", ".join(skills))
+                    st.write(
+                        "**Skills found:**", ", ".join(skills)
+                    )
 
                     resume_id = save_resume(
                         resume_name, uploaded_file.name,
                         raw_text, skills
                     )
 
-                    with st.spinner(
-                        "🔍 Scraping jobs tailored to your resume..."
-                    ):
-                        from scraper import scrape_for_resume
-                        scraped = scrape_for_resume(
-                            resume_id, user_id=resume_id
+                    # Skip live scraping on Azure
+                    # Use existing jobs in DB instead
+                    try:
+                        total = get_total_jobs()
+                        st.info(
+                            f"🔍 Matching against "
+                            f"{total} jobs in database..."
                         )
-                        st.success(f"Found {scraped} new jobs for your profile!")
+                    except:
+                        st.info("🔍 Matching against job database...")
 
-                    with st.spinner("🎯 Scoring all jobs..."):
+                    with st.spinner(
+                        "🎯 Scoring all jobs against "
+                        "your resume... (~2 mins)"
+                    ):
                         scored = score_jobs_for_resume(resume_id)
                         st.success(f"Scored {scored} jobs!")
                         st.cache_data.clear()
@@ -293,15 +336,15 @@ elif page == "📄 Resume Match":
                         f"📄 {row['name']} — "
                         f"{str(row['uploaded_at'])[:10]}"
                     ):
-                        st.write("**Skills:**", row['extracted_skills'])
+                        st.write(
+                            "**Skills:**", row['extracted_skills']
+                        )
             else:
                 st.info("No resumes uploaded yet.")
         except:
             st.info("Upload your first resume!")
 
-    
-
-    # ── JOB MATCHES ──
+    st.divider()
     st.subheader("🎯 Your Job Matches")
 
     try:
@@ -309,9 +352,9 @@ elif page == "📄 Resume Match":
         if len(resumes_df) == 0:
             st.info("Upload a resume to see matches!")
         else:
-            # Resume selector
             resume_options = {
-                f"{r['name']} ({str(r['uploaded_at'])[:10]})": r['id']
+                f"{r['name']} "
+                f"({str(r['uploaded_at'])[:10]})": r['id']
                 for _, r in resumes_df.iterrows()
             }
             selected_resume = st.selectbox(
@@ -319,7 +362,6 @@ elif page == "📄 Resume Match":
             )
             resume_id = resume_options[selected_resume]
 
-            # Filters
             col1, col2, col3 = st.columns(3)
             with col1:
                 min_score = st.slider(
@@ -328,7 +370,8 @@ elif page == "📄 Resume Match":
             with col2:
                 platform_filter = st.selectbox(
                     "Platform",
-                    ["All", "JSearch", "Internshala", "Naukri"]
+                    ["All", "JSearch", "Internshala",
+                     "Naukri", "LinkedIn", "Indeed"]
                 )
             with col3:
                 location_filter = st.text_input(
@@ -338,7 +381,6 @@ elif page == "📄 Resume Match":
 
             matches_df = load_matches(resume_id, min_score)
 
-            # Apply filters
             if platform_filter != "All":
                 matches_df = matches_df[
                     matches_df['source_platform'] == platform_filter
@@ -351,52 +393,65 @@ elif page == "📄 Resume Match":
                 ]
 
             if len(matches_df) == 0:
-                st.info("No matches found. Try lowering the score filter.")
+                st.info(
+                    "No matches found. "
+                    "Try lowering the score filter."
+                )
             else:
                 st.write(
-                    f"**{len(matches_df)} jobs** match your criteria"
+                    f"**{len(matches_df)} jobs** "
+                    f"match your criteria"
                 )
 
-                # Score distribution
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Excellent (8+)",
-                    len(matches_df[matches_df['match_score'] >= 8])
+                c1.metric("🔥 Excellent (8+)",
+                    len(matches_df[
+                        matches_df['match_score'] >= 8
+                    ])
                 )
-                c2.metric("Good (6-8)",
+                c2.metric("👍 Good (6-8)",
                     len(matches_df[
                         (matches_df['match_score'] >= 6) &
                         (matches_df['match_score'] < 8)
                     ])
                 )
-                c3.metric("Fair (4-6)",
+                c3.metric("📋 Fair (4-6)",
                     len(matches_df[
                         (matches_df['match_score'] >= 4) &
                         (matches_df['match_score'] < 6)
                     ])
                 )
 
-                
+                st.divider()
 
                 for idx, job in matches_df.iterrows():
                     score = float(job['match_score'])
-                    chance = float(job.get('interview_chance') or 0)
                     color = (
                         "🟢" if score >= 7
                         else "🟡" if score >= 4
                         else "🔴"
                     )
+                    fit = (
+                        "🔥 Excellent Fit" if score >= 7
+                        else "👍 Good Fit" if score >= 5
+                        else "📋 Fair Fit"
+                    )
 
                     with st.expander(
                         f"{color} **{job['job_title']}** @ "
                         f"{job['company_name']} — "
-                        f"Match: {score}/10 | "
-                        f"Interview Chance: {chance}%"
+                        f"Match: {score}/10 | {fit}"
                     ):
                         c1, c2 = st.columns(2)
 
                         with c1:
-                            st.write(f"📍 **Location:** {job['location']}")
-                            st.write(f"🌐 **Platform:** {job['source_platform']}")
+                            st.write(
+                                f"📍 **Location:** {job['location']}"
+                            )
+                            st.write(
+                                f"🌐 **Platform:** "
+                                f"{job['source_platform']}"
+                            )
                             if job.get('date_posted'):
                                 st.write(
                                     f"📅 **Posted:** "
@@ -404,28 +459,42 @@ elif page == "📄 Resume Match":
                                 )
                             if job['job_url']:
                                 st.markdown(
-                                    f"[🔗 Apply Here]({job['job_url']})"
+                                    f"[🔗 Apply Here]"
+                                    f"({job['job_url']})"
                                 )
 
-                            # Interview questions
                             q = (
-                                f"{job['company_name']} "
                                 f"{job['job_title']} "
                                 f"interview questions"
                             ).replace(' ', '+')
                             st.markdown(
                                 f"[🎯 Interview Questions]"
-                                f"(https://www.google.com/search?q={q})"
+                                f"(https://www.google.com"
+                                f"/search?q={q})"
                             )
 
-                            # Glassdoor
-                            g = (
-                                f"{job['company_name']} reviews"
-                            ).replace(' ', '+')
+                            company_slug = (
+                                job['company_name']
+                                .lower()
+                                .replace(' ', '-')
+                                .replace(',', '')
+                                .replace('.', '')
+                                .replace("'", '')
+                            )
                             st.markdown(
-                                f"[⭐ Company Reviews]"
-                                f"(https://www.google.com/search?q={g}"
-                                f"+site:glassdoor.com)"
+                                f"[⭐ Glassdoor Reviews]"
+                                f"(https://www.glassdoor.co.in"
+                                f"/Reviews/{company_slug}"
+                                f"-reviews.htm)"
+                            )
+
+                            li = job['company_name'].replace(
+                                ' ', '%20'
+                            )
+                            st.markdown(
+                                f"[💼 LinkedIn]"
+                                f"(https://www.linkedin.com"
+                                f"/company/{li})"
                             )
 
                         with c2:
@@ -435,31 +504,43 @@ elif page == "📄 Resume Match":
                             )
                             st.write(
                                 f"❌ **Missing:** "
-                                f"{job['missing_keywords'] or 'None'}"
+                                f"{job['missing_keywords'] or 'None — great fit!'}"
                             )
                             st.progress(score / 10)
-                            st.write(f"🎲 **Interview Chance:** {chance}%")
+                            fit_color = (
+                                "#2ECC71" if score >= 7
+                                else "#F39C12" if score >= 5
+                                else "#E74C3C"
+                            )
+                            st.markdown(
+                                f"**Fit Level:** "
+                                f"<span style='color:{fit_color}'>"
+                                f"{fit}</span>",
+                                unsafe_allow_html=True
+                            )
 
-                        # Action buttons
-                        b1, b2 = st.columns(2)
-                        with b1:
-                            if st.button(
-                                "📝 Track Application",
-                                key=f"track_{idx}"
-                            ):
-                                conn = get_connection()
-                                cur = conn.cursor()
-                                cur.execute("""
-                                    INSERT INTO applications
-                                        (job_title, company_name,
-                                         applied_date, status)
-                                    VALUES (%s, %s, CURRENT_DATE, 'Applied')
-                                """, (job['job_title'], job['company_name']))
-                                conn.commit()
-                                cur.close()
-                                conn.close()
-                                st.success("Added to tracker!")
-                                st.cache_data.clear()
+                        if st.button(
+                            "📝 Track Application",
+                            key=f"track_{idx}"
+                        ):
+                            conn = get_connection()
+                            cur = conn.cursor()
+                            cur.execute("""
+                                INSERT INTO applications
+                                    (job_title, company_name,
+                                     applied_date, status)
+                                VALUES (
+                                    %s, %s, CURRENT_DATE, 'Applied'
+                                )
+                            """, (
+                                job['job_title'],
+                                job['company_name']
+                            ))
+                            conn.commit()
+                            cur.close()
+                            conn.close()
+                            st.success("Added to tracker!")
+                            st.cache_data.clear()
 
     except Exception as e:
         st.error(f"Error: {e}")
@@ -471,7 +552,6 @@ elif page == "📄 Resume Match":
 # ══════════════════════════════════════════════════════════
 elif page == "📋 Applications":
     st.title("📋 Application Tracker")
-    
 
     try:
         apps_df = load_applications()
@@ -516,17 +596,21 @@ elif page == "📋 Applications":
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Total Applied", len(apps_df))
                 c2.metric("Interviews",
-                    len(apps_df[apps_df['status'] == 'Interview'])
+                    len(apps_df[
+                        apps_df['status'] == 'Interview'
+                    ])
                 )
                 c3.metric("Offers",
-                    len(apps_df[apps_df['status'] == 'Offer'])
+                    len(apps_df[
+                        apps_df['status'] == 'Offer'
+                    ])
                 )
-                responded = len(apps_df[apps_df['status'] != 'Applied'])
+                responded = len(
+                    apps_df[apps_df['status'] != 'Applied']
+                )
                 c4.metric("Response Rate",
                     f"{round(responded / len(apps_df) * 100)}%"
                 )
-
-                
 
                 status_filter = st.multiselect(
                     "Filter by Status",
@@ -547,7 +631,11 @@ elif page == "📋 Applications":
                     hide_index=True
                 )
 
-                status_counts = apps_df['status'].value_counts().reset_index()
+                status_counts = (
+                    apps_df['status']
+                    .value_counts()
+                    .reset_index()
+                )
                 status_counts.columns = ['Status', 'Count']
                 fig = px.bar(
                     status_counts, x='Status', y='Count',
